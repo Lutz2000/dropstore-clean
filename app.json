@@ -1,0 +1,56 @@
+{
+  "expo": {
+    "name": "DropStore",
+    "slug": "dropstore",
+    "version": "1.0.1",
+    "sdkVersion": "53.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": false,
+    "scheme": "dropstore",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#1a1a1a"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.dropmartug.dropstore",
+      "buildNumber": "1",
+      "infoPlist": {
+        "NSPhotoLibraryUsageDescription": "DropStore needs access to your photo library to upload product images and profile pictures.",
+        "NSCameraUsageDescription": "DropStore needs access to your camera to take photos for products.",
+        "NSMicrophoneUsageDescription": "DropStore needs microphone access for video recordings.",
+        "ITSAppUsesNonExemptEncryption": false
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "package": "com.dropmartug.dropstore"
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-secure-store",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "DropStore needs access to your photo library to upload product images and profile pictures.",
+          "cameraPermission": "DropStore needs access to your camera to take photos."
+        }
+      ]
+    ],
+    "extra": {
+      "apiUrl": "https://dropstore.click/public/api",
+      "eas": {
+        "projectId": "c13a70eb-9848-424b-8d9d-4d6b02a3f878"
+      }
+    },
+    "owner": "lutaaya01"
+  }
+}
