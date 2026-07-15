@@ -7,25 +7,18 @@
     "development": {
       "developmentClient": true,
       "distribution": "internal",
-      "ios": {
-        "image": "macos-sequoia-15.4-xcode-16.3"
-      }
+      "ios": { "image": "macos-sequoia-15.6-xcode-26.2" }
     },
     "preview": {
       "distribution": "internal",
-      "ios": {
-        "image": "macos-sequoia-15.4-xcode-16.3",
-        "simulator": false
-      },
-      "android": {
-        "buildType": "apk"
-      }
+      "ios": { "image": "macos-sequoia-15.6-xcode-26.2", "simulator": false },
+      "android": { "buildType": "apk" }
     },
     "production": {
       "autoIncrement": true,
-      "ios": {
-        "image": "macos-sequoia-15.4-xcode-16.3",
-        "resourceClass": "m-medium"
+      "ios": { 
+        "image": "macos-sequoia-15.6-xcode-26.2", 
+        "resourceClass": "m-medium" 
       }
     }
   },
