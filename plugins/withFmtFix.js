@@ -11,11 +11,13 @@ module.exports = function withFmtFix(config) {
       if (podfile.includes('FMT_USE_NONTYPE_TEMPLATE_ARGS')) return config;
       const patch = `
     installer.pods_project.targets.each do |target|
-      target.build_configurations.each do |config|
-        config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] ||= ['$(inherited)']
-        unless config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'].include?('FMT_USE_NONTYPE_TEMPLATE_ARGS=0')
-          config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] << 'FMT_USE_NONTYPE_TEMPLATE_ARGS=0'
+      if target.name == 'fmt'
+        target.build_configurations.each do |config|
+          config.build_settings['CLANG_CXX_LANGUAGE_STANDARD'] = 'c++17'
+          config.build_settings['OTHER_CPLUSPLUSFLAGS'] = '$(inherited) -DFMT_USE_NONTYPE_TEMPLATE_ARGS=0'
         end
+      end
+      target.build_configurations.each do |config|
         config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.1'
       end
     end
