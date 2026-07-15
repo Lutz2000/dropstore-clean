@@ -27,8 +27,10 @@ function VendorCard({ item, onPress }) {
             {item.business_name || item.name}
           </Text>
           {item.is_verified && (
-            {verified && <MaterialCommunityIcons name="check-circle" size={12} color={COLORS.primary} />}
-            {verified && <Text style={styles.verifiedBadge}>Verified</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+              <MaterialCommunityIcons name="check-circle" size={12} color={COLORS.primary} />
+              <Text style={styles.verifiedBadge}>Verified</Text>
+            </View>
           )}
         </View>
         <Text style={styles.contactSub} numberOfLines={1}>
