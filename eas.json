@@ -8,13 +8,13 @@
       "developmentClient": true,
       "distribution": "internal",
       "ios": {
-        "image": "macos-sequoia-15.3-xcode-16.3"
+        "image": "macos-sequoia-15.4-xcode-16.3"
       }
     },
     "preview": {
       "distribution": "internal",
       "ios": {
-        "image": "macos-sequoia-15.3-xcode-16.3",
+        "image": "macos-sequoia-15.4-xcode-16.3",
         "simulator": false
       },
       "android": {
@@ -24,7 +24,7 @@
     "production": {
       "autoIncrement": true,
       "ios": {
-        "image": "macos-sequoia-15.3-xcode-16.3",
+        "image": "macos-sequoia-15.4-xcode-16.3",
         "resourceClass": "m-medium"
       }
     }
