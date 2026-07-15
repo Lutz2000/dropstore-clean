@@ -43,12 +43,13 @@
           "photosPermission": "DropStore needs access to your photo library to upload product images and profile pictures.",
           "cameraPermission": "DropStore needs access to your camera to take photos."
         }
-      ]
+      ],
+      "./plugins/withFmtFix"
     ],
     "extra": {
       "apiUrl": "https://dropstore.click/public/api",
       "eas": {
-        "projectId": "c13a70eb-9848-424b-8d9d-4d6b02a3f878"
+        "projectId": "6baa36ef-4150-428e-b2d0-9299cc6336f8"
       }
     },
     "owner": "lutaaya01"
