@@ -1,8 +1,10 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import {
-  View, Text, FlatList, TouchableOpacity, StyleSheet,
+  View, Text, FlatList, StyleSheet,
   ActivityIndicator, RefreshControl, Image,
 } from 'react-native';
+// Import TouchableOpacity from gesture-handler to fix iPad touch unresponsiveness
+import { TouchableOpacity } from 'react-native-gesture-handler';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import client, { BASE_URL } from '../api/client';
 import { COLORS } from '../constants/theme';
@@ -133,7 +135,8 @@ export default function BuyerOffersScreen({ navigation }) {
 const styles = StyleSheet.create({
   container   : { flex: 1, backgroundColor: '#f9f9f9' },
 
-  card        : { backgroundColor: '#fff', borderRadius: 12, padding: 12, flexDirection: 'row', gap: 12, elevation: 2 },
+  // Added width: '100%' to enforce proper card scaling boundaries on wide tablet viewports
+  card        : { backgroundColor: '#fff', borderRadius: 12, padding: 12, flexDirection: 'row', gap: 12, elevation: 2, width: '100%' },
   cardUnread  : { borderLeftWidth: 3, borderLeftColor: COLORS.primary },
   thumb       : { width: 62, height: 62, borderRadius: 8, backgroundColor: '#f0f0f0' },
   cardBody    : { flex: 1 },
