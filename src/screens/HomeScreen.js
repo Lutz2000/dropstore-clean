@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback, useRef } from 'react';
 import {
   View, Text, FlatList, TouchableOpacity, StyleSheet, Image,
   TextInput, ActivityIndicator, RefreshControl, ScrollView, Modal,
-  Dimensions,
+  Dimensions, SafeAreaView, // 👈 Imported SafeAreaView
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
@@ -239,7 +239,8 @@ export default function HomeScreen({ navigation }) {
   };
 
   return (
-    <View style={styles.container}>
+    // Changed root view to SafeAreaView to safeguard the header elements from device notches
+    <SafeAreaView style={styles.container}>
       {/* ─── SIMPLE SEARCH BAR ─── */}
       <View style={styles.searchWrap}>
         <View style={styles.searchRow}>
@@ -353,7 +354,7 @@ export default function HomeScreen({ navigation }) {
           </View>
         </View>
       </Modal>
-    </View>
+    </SafeAreaView>
   );
 }
 
