@@ -1,12 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import {
-  View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  Alert, ActivityIndicator, Linking, RefreshControl,
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  Alert,
+  ActivityIndicator,
+  Linking,
+  RefreshControl,
 } from 'react-native';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import client from '../../api/client';
 import { useAuth } from '../../context/AuthContext';
 import { COLORS } from '../../constants/theme';
+
 export default function VendorDashboardScreen({ navigation }) {
   const { user, logout } = useAuth();
   const [loading, setLoading] = useState(false);
@@ -26,7 +34,7 @@ export default function VendorDashboardScreen({ navigation }) {
         setStats(res.data);
       }
     } catch (e) {
-      // Gracefully handle error or fallback
+      // Gracefully handle errors or fallbacks
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -46,6 +54,23 @@ export default function VendorDashboardScreen({ navigation }) {
     await logout();
   };
 
+  // Web redirect for Payments and Billing
+  const handleOpenWebPayments = async () => {
+    const webPortalUrl = 'https://dropstore.click/';
+
+    try {
+      const supported = await Linking.canOpenURL(webPortalUrl);
+      if (supported) {
+        await Linking.openURL(webPortalUrl);
+      } else {
+        Alert.alert('Error', `Unable to open browser. Please visit ${webPortalUrl}`);
+      }
+    } catch (error) {
+      Alert.alert('Error', 'Could not open the vendor web portal.');
+    }
+  };
+
+  // Email-based deletion request handler
   const handleDeleteAccount = () => {
     Alert.alert(
       'Request Account Deletion',
@@ -89,14 +114,14 @@ export default function VendorDashboardScreen({ navigation }) {
       contentContainerStyle={styles.inner}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
     >
-      {/* Vendor Header Header */}
+      {/* Vendor Header */}
       <View style={styles.header}>
         <View>
           <Text style={styles.welcomeText}>Welcome back,</Text>
           <Text style={styles.vendorName}>{user?.name || 'Vendor Partner'}</Text>
         </View>
         <TouchableOpacity style={styles.profileBadge} onPress={() => navigation.navigate('Profile')}>
-          <MaterialCommunityIcons name="account-circle" size={36} color={COLORS.primary} />
+          <MaterialCommunityIcons name="account-circle" size={38} color={COLORS.primary} />
         </TouchableOpacity>
       </View>
 
@@ -108,17 +133,17 @@ export default function VendorDashboardScreen({ navigation }) {
         <View style={styles.statsGrid}>
           <View style={styles.statCard}>
             <MaterialCommunityIcons name="package-variant" size={24} color={COLORS.primary} />
-            <Text style={styles.statNumber}>{stats.totalProducts}</Text>
+            <Text style={styles.statNumber}>{stats.totalProducts || 0}</Text>
             <Text style={styles.statLabel}>Products</Text>
           </View>
           <View style={styles.statCard}>
             <MaterialCommunityIcons name="clipboard-text-outline" size={24} color="#3b82f6" />
-            <Text style={styles.statNumber}>{stats.totalOrders}</Text>
+            <Text style={styles.statNumber}>{stats.totalOrders || 0}</Text>
             <Text style={styles.statLabel}>Orders</Text>
           </View>
           <View style={styles.statCard}>
             <MaterialCommunityIcons name="tag-multiple-outline" size={24} color="#eab308" />
-            <Text style={styles.statNumber}>{stats.pendingOffers}</Text>
+            <Text style={styles.statNumber}>{stats.pendingOffers || 0}</Text>
             <Text style={styles.statLabel}>Pending Offers</Text>
           </View>
           <View style={styles.statCard}>
@@ -129,8 +154,8 @@ export default function VendorDashboardScreen({ navigation }) {
         </View>
       )}
 
-      {/* Quick Actions */}
-      <Text style={styles.sectionTitle}>Quick Actions</Text>
+      {/* Quick Actions & Management */}
+      <Text style={styles.sectionTitle}>Management & Actions</Text>
       <View style={styles.actionsList}>
         <TouchableOpacity
           style={styles.actionItem}
@@ -169,13 +194,27 @@ export default function VendorDashboardScreen({ navigation }) {
           </View>
           <View style={styles.actionContent}>
             <Text style={styles.actionTitle}>Orders & Deliveries</Text>
-            <Text style={styles.actionSub}>Track customer fulfillments</Text>
+            <Text style={styles.actionSub}>Track & process customer orders</Text>
+          </View>
+          <MaterialCommunityIcons name="chevron-right" size={22} color="#94a3b8" />
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.actionItem}
+          onPress={handleOpenWebPayments}
+        >
+          <View style={[styles.actionIconWrap, { backgroundColor: '#fdf4ff' }]}>
+            <MaterialCommunityIcons name="open-in-new" size={22} color="#c084fc" />
+          </View>
+          <View style={styles.actionContent}>
+            <Text style={styles.actionTitle}>Payments & Web Portal</Text>
+            <Text style={styles.actionSub}>Manage store billing and payouts on dropstore.click</Text>
           </View>
           <MaterialCommunityIcons name="chevron-right" size={22} color="#94a3b8" />
         </TouchableOpacity>
       </View>
 
-      {/* Account Management */}
+      {/* Account Options */}
       <Text style={styles.sectionTitle}>Account Options</Text>
       <View style={styles.accountOptions}>
         <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
