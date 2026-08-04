@@ -4,10 +4,9 @@ import {
   Alert, ActivityIndicator, Linking, RefreshControl,
 } from 'react-native';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
-import client from '../api/client';
-import { useAuth } from '../context/AuthContext';
-import { COLORS } from '../constants/theme';
-
+import client from '../../api/client';
+import { useAuth } from '../../context/AuthContext';
+import { COLORS } from '../../constants/theme';
 export default function VendorDashboardScreen({ navigation }) {
   const { user, logout } = useAuth();
   const [loading, setLoading] = useState(false);
