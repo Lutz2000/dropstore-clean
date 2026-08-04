@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
-  ScrollView, ActivityIndicator, Alert, KeyboardAvoidingView, Platform, Modal, Image,
+  ScrollView, ActivityIndicator, Alert, KeyboardAvoidingView, Platform, Modal, Image, Linking,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
@@ -58,6 +58,40 @@ export default function ProfileScreen({ navigation }) {
 
   const handleLogout = async () => {
     await logout();
+  };
+
+  const handleDeleteAccount = () => {
+    Alert.alert(
+      'Request Account Deletion',
+      'To delete your account, an email request will be sent to our support team. Are you sure you want to proceed?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Send Request',
+          style: 'destructive',
+          onPress: async () => {
+            const supportEmail = 'support@dropoffcouriers.com';
+            const subject = encodeURIComponent('Account Deletion Request');
+            const body = encodeURIComponent(
+              `Hello Support Team,\n\nI would like to request the permanent deletion of my account.\n\nAccount Details:\nName: ${user?.name || 'N/A'}\nEmail: ${user?.email || 'N/A'}\nPhone: ${user?.phone || 'N/A'}\n\nThank you.`
+            );
+
+            const mailtoUrl = `mailto:${supportEmail}?subject=${subject}&body=${body}`;
+
+            try {
+              const canOpen = await Linking.canOpenURL(mailtoUrl);
+              if (canOpen) {
+                await Linking.openURL(mailtoUrl);
+              } else {
+                Alert.alert('Error', 'Unable to open your email client. Please send an email to support@dropoffcouriers.com');
+              }
+            } catch (error) {
+              Alert.alert('Error', 'Could not open the mail application.');
+            }
+          },
+        },
+      ]
+    );
   };
 
   const closeFbModal = () => { setFbModal(false); setFbSuccess(false); setFbSubject(''); setFbMessage(''); setFbCategory('general'); };
@@ -127,25 +161,25 @@ export default function ProfileScreen({ navigation }) {
 
         {/* Feedback */}
         <TouchableOpacity style={styles.fbBtn} onPress={() => setFbModal(true)}>
-          <MaterialCommunityIcons name="chat-outline" size={16} color="#fff" />
+          <MaterialCommunityIcons name="chat-outline" size={16} color={COLORS.primary} />
           <Text style={styles.fbBtnText}>Give Feedback</Text>
         </TouchableOpacity>
 
         {/* My Offers shortcut */}
         <TouchableOpacity style={styles.fbBtn} onPress={() => navigation.navigate('MyOffers')}>
-          <MaterialCommunityIcons name="tag-multiple-outline" size={16} color="#fff" />
+          <MaterialCommunityIcons name="tag-multiple-outline" size={16} color={COLORS.primary} />
           <Text style={styles.fbBtnText}>My Price Offers</Text>
         </TouchableOpacity>
 
         {/* About Us */}
         <TouchableOpacity style={styles.fbBtn} onPress={() => navigation.navigate('About')}>
-          <MaterialCommunityIcons name="information-outline" size={16} color="#fff" />
+          <MaterialCommunityIcons name="information-outline" size={16} color={COLORS.primary} />
           <Text style={styles.fbBtnText}>About Us</Text>
         </TouchableOpacity>
 
         {/* Policies */}
         <TouchableOpacity style={styles.fbBtn} onPress={() => navigation.navigate('Policies')}>
-          <MaterialCommunityIcons name="shield-outline" size={16} color="#fff" />
+          <MaterialCommunityIcons name="shield-outline" size={16} color={COLORS.primary} />
           <Text style={styles.fbBtnText}>Policies</Text>
         </TouchableOpacity>
 
@@ -153,15 +187,18 @@ export default function ProfileScreen({ navigation }) {
           <Text style={styles.logoutText}>Sign Out</Text>
         </TouchableOpacity>
 
+        {/* Request Account Deletion Button */}
+        <TouchableOpacity style={styles.deleteBtn} onPress={handleDeleteAccount}>
+          <Text style={styles.deleteBtnText}>Request Account Deletion</Text>
+        </TouchableOpacity>
+
         {/* Feedback modal */}
         <Modal visible={fbModal} transparent animationType="slide" onRequestClose={closeFbModal}>
           <KeyboardAvoidingView style={styles.modalOverlay} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
             <View style={styles.modalBox}>
-              {/* Handle bar */}
               <View style={styles.modalHandle} />
 
               {fbSuccess ? (
-                /* Success state */
                 <View style={styles.fbSuccessWrap}>
                   <MaterialCommunityIcons name="check-circle" size={48} color={COLORS.primary} />
                   <Text style={styles.fbSuccessTitle}>Thank you!</Text>
@@ -174,7 +211,7 @@ export default function ProfileScreen({ navigation }) {
                 <>
                   <View style={styles.modalHeader}>
                     <View style={styles.fbHeaderIcon}>
-                      <MaterialCommunityIcons name="chat-outline" size={20} color={COLORS.primary} />
+                      <MaterialCommunityIcons name="chat-outline" size={20} color="#fff" />
                     </View>
                     <View style={{ flex: 1 }}>
                       <Text style={styles.modalTitle}>Share Feedback</Text>
@@ -185,7 +222,6 @@ export default function ProfileScreen({ navigation }) {
                     </TouchableOpacity>
                   </View>
 
-                  {/* Category chips */}
                   <Text style={styles.fbLabel}>Type</Text>
                   <View style={styles.fbChipsRow}>
                     {FB_CATEGORIES.map(c => (
@@ -256,16 +292,17 @@ const styles = StyleSheet.create({
   avatarInitials : { width: 80, height: 80, borderRadius: 40, alignItems: 'center', justifyContent: 'center' },
   avatarText     : { fontSize: 28, fontWeight: '800', color: '#fff' },
   avatarCameraBtn: { position: 'absolute', bottom: 0, right: -2, backgroundColor: '#fff', borderRadius: 12, padding: 3, borderWidth: 1, borderColor: '#e2e8f0' },
-  avatarName     : { fontSize: 20, fontWeight: '700', color: '#1a1a1a', marginTop: 10 },
   avatarRole     : { fontSize: 12, color: COLORS.primary, fontWeight: '600', marginTop: 2 },
   label      : { fontSize: 13, fontWeight: '600', color: '#1a1a1a', marginTop: 14, marginBottom: 4 },
   input      : { borderWidth: 1, borderColor: '#e0e0e0', borderRadius: 10, paddingHorizontal: 14, paddingVertical: 12, fontSize: 15, backgroundColor: '#f9f9f9', color: '#1a1a1a' },
   btn        : { backgroundColor: COLORS.primary, borderRadius: 12, paddingVertical: 15, alignItems: 'center', marginTop: 28 },
   btnText    : { color: '#fff', fontSize: 16, fontWeight: '700' },
-  fbBtn      : { borderWidth: 1.5, borderColor: COLORS.primary, borderRadius: 12, paddingVertical: 13, alignItems: 'center', marginTop: 12 },
+  fbBtn      : { borderWidth: 1.5, borderColor: COLORS.primary, borderRadius: 12, paddingVertical: 13, alignItems: 'center', marginTop: 12, flexDirection: 'row', justifyContent: 'center', gap: 8 },
   fbBtnText  : { color: COLORS.primary, fontSize: 15, fontWeight: '700' },
   logoutBtn  : { borderWidth: 2, borderColor: '#ef4444', borderRadius: 12, paddingVertical: 13, alignItems: 'center', marginTop: 12 },
   logoutText : { color: '#ef4444', fontSize: 15, fontWeight: '600' },
+  deleteBtn  : { backgroundColor: '#fef2f2', borderWidth: 1, borderColor: '#fca5a5', borderRadius: 12, paddingVertical: 13, alignItems: 'center', marginTop: 12 },
+  deleteBtnText: { color: '#ef4444', fontSize: 15, fontWeight: '700' },
   modalOverlay  : { flex: 1, backgroundColor: 'rgba(15,23,42,0.6)', justifyContent: 'flex-end' },
   modalBox      : { backgroundColor: '#fff', borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 20, paddingBottom: 36 },
   modalHandle   : { width: 40, height: 4, borderRadius: 2, backgroundColor: '#e2e8f0', alignSelf: 'center', marginBottom: 16 },
@@ -274,13 +311,12 @@ const styles = StyleSheet.create({
   modalSub      : { fontSize: 12, color: '#64748b', marginTop: 1 },
   fbHeaderIcon  : { width: 42, height: 42, borderRadius: 13, backgroundColor: COLORS.primary, alignItems: 'center', justifyContent: 'center' },
   fbCloseBtn    : { width: 32, height: 32, borderRadius: 10, borderWidth: 1.5, borderColor: '#e2e8f0', backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center' },
-  fbCloseBtnText: { fontSize: 14, color: '#94a3b8' },
   fbLabel       : { fontSize: 11, fontWeight: '700', color: '#475569', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 },
   fbOptional    : { fontWeight: '400', textTransform: 'none', color: '#94a3b8', letterSpacing: 0 },
   fbLabelRow    : { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
   fbCharCount   : { fontSize: 11, color: '#94a3b8' },
   fbChipsRow    : { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 14 },
-  fbChip        : { paddingVertical: 5, paddingHorizontal: 12, borderRadius: 20, borderWidth: 1.5, borderColor: '#e2e8f0', backgroundColor: '#fff' },
+  fbChip        : { paddingVertical: 5, paddingHorizontal: 12, borderRadius: 20, borderWidth: 1.5, borderColor: '#e2e8f0', backgroundColor: '#fff', flexDirection: 'row', alignItems: 'center', gap: 4 },
   fbChipActive  : { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
   fbChipText    : { fontSize: 12.5, fontWeight: '600', color: '#475569' },
   fbInput       : { borderWidth: 1.5, borderColor: '#e2e8f0', borderRadius: 12, paddingHorizontal: 14, paddingVertical: 11, fontSize: 14, backgroundColor: '#f8fafc', color: '#0f172a', marginBottom: 12 },
@@ -291,7 +327,6 @@ const styles = StyleSheet.create({
   fbSendBtn     : { flex: 2, backgroundColor: COLORS.primary, borderRadius: 12, paddingVertical: 13, alignItems: 'center', justifyContent: 'center' },
   fbSendText    : { color: '#fff', fontWeight: '700', fontSize: 14 },
   fbSuccessWrap : { alignItems: 'center', paddingVertical: 32, gap: 10 },
-  fbSuccessIcon : { fontSize: 52 },
   fbSuccessTitle: { fontSize: 20, fontWeight: '800', color: '#0f172a' },
   fbSuccessSub  : { fontSize: 13, color: '#64748b', textAlign: 'center', lineHeight: 20 },
   fbDoneBtn     : { marginTop: 8, paddingVertical: 11, paddingHorizontal: 36, borderRadius: 12, backgroundColor: '#f1f5f9' },
