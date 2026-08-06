@@ -11,7 +11,9 @@ import {
   RefreshControl,
 } from 'react-native';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
-import client from '../../api/client';
+import * as SecureStore from 'expo-secure-store';
+import client, { TOKEN_KEY } from '../../api/client';
+import { clearAllCache } from '../../api/cache';
 import { useAuth } from '../../context/AuthContext';
 import { COLORS } from '../../constants/theme';
 
@@ -20,10 +22,11 @@ export default function VendorDashboardScreen({ navigation }) {
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [stats, setStats] = useState({
-    totalProducts: 0,
-    totalOrders: 0,
-    totalSales: 0,
-    pendingOffers: 0,
+    productsCount: 0,
+    clicksCount: 0,
+    deliveriesCount: 0,
+    planType: 'Free',
+    isVerified: true,
   });
 
   const fetchDashboardData = async () => {
@@ -34,7 +37,7 @@ export default function VendorDashboardScreen({ navigation }) {
         setStats(res.data);
       }
     } catch (e) {
-      // Gracefully handle errors or fallbacks
+      // Graceful fallback for dashboard stats load failure
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -51,13 +54,13 @@ export default function VendorDashboardScreen({ navigation }) {
   };
 
   const handleLogout = async () => {
+    await clearAllCache();
     await logout();
   };
 
-  // Web redirect for Payments and Billing
-  const handleOpenWebPayments = async () => {
+  // Redirect to web portal for store billing & plans (Apple IAP compliant)
+  const handleOpenSubscriptionWeb = async () => {
     const webPortalUrl = 'https://dropstore.click/';
-
     try {
       const supported = await Linking.canOpenURL(webPortalUrl);
       if (supported) {
@@ -70,37 +73,51 @@ export default function VendorDashboardScreen({ navigation }) {
     }
   };
 
-  // Email-based deletion request handler
+  // Immediate In-App Account Deletion (Apple Guideline 5.1.1(v) Compliant)
   const handleDeleteAccount = () => {
     Alert.alert(
-      'Request Account Deletion',
-      'To delete your vendor account, an email request will be sent to our support team. Are you sure you want to proceed?',
+      'Delete Account',
+      'Are you sure you want to permanently delete your account? This action cannot be undone and will permanently remove your vendor profile and data.',
       [
         { text: 'Cancel', style: 'cancel' },
         {
-          text: 'Send Request',
+          text: 'Delete Permanently',
           style: 'destructive',
           onPress: async () => {
-            const supportEmail = 'support@dropoffcouriers.com';
-            const subject = encodeURIComponent('Vendor Account Deletion Request');
-            const body = encodeURIComponent(
-              `Hello Support Team,\n\nI would like to request the permanent deletion of my vendor account.\n\nVendor Details:\nName: ${user?.name || 'N/A'}\nEmail: ${user?.email || 'N/A'}\nPhone: ${user?.phone || 'N/A'}\n\nThank you.`
-            );
-
-            const mailtoUrl = `mailto:${supportEmail}?subject=${subject}&body=${body}`;
-
             try {
-              const canOpen = await Linking.canOpenURL(mailtoUrl);
-              if (canOpen) {
-                await Linking.openURL(mailtoUrl);
-              } else {
+              setLoading(true);
+
+              // 1. Call backend deletion endpoint
+              const res = await client.delete('/vendor/account');
+
+              if (res.status === 200 || res.status === 204) {
+                // 2. Clear token & local cache
+                await SecureStore.deleteItemAsync(TOKEN_KEY);
+                await clearAllCache();
+
                 Alert.alert(
-                  'Error',
-                  'Unable to open your email client. Please email support@dropoffcouriers.com directly.'
+                  'Account Deleted',
+                  'Your vendor account has been permanently deleted.',
+                  [
+                    {
+                      text: 'OK',
+                      onPress: async () => {
+                        await logout();
+                      },
+                    },
+                  ]
                 );
+              } else {
+                Alert.alert('Error', res.data?.message || 'Failed to delete account.');
               }
             } catch (error) {
-              Alert.alert('Error', 'Could not open the mail application.');
+              Alert.alert(
+                'Error',
+                error.response?.data?.message ||
+                  'Unable to complete account deletion at this time. Please try again.'
+              );
+            } finally {
+              setLoading(false);
             }
           },
         },
@@ -114,103 +131,134 @@ export default function VendorDashboardScreen({ navigation }) {
       contentContainerStyle={styles.inner}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
     >
-      {/* Vendor Header */}
+      {/* Header */}
       <View style={styles.header}>
-        <View>
-          <Text style={styles.welcomeText}>Welcome back,</Text>
-          <Text style={styles.vendorName}>{user?.name || 'Vendor Partner'}</Text>
+        <View style={styles.headerTitleRow}>
+          <Text style={styles.helloText}>Hello, {user?.name?.split(' ')[0] || 'Vendor'}</Text>
+          <MaterialCommunityIcons name="check-decagram" size={20} color="#eab308" style={{ marginLeft: 6 }} />
         </View>
-        <TouchableOpacity style={styles.profileBadge} onPress={() => navigation.navigate('Profile')}>
-          <MaterialCommunityIcons name="account-circle" size={38} color={COLORS.primary} />
+        <TouchableOpacity onPress={handleLogout}>
+          <Text style={styles.signOutHeaderBtn}>Sign Out</Text>
+        </TouchableOpacity>
+      </View>
+      <Text style={styles.subHeader}>Vendor Dashboard</Text>
+
+      {/* Unlock More Features Banner */}
+      <View style={styles.promoBanner}>
+        <View style={styles.promoBannerHeader}>
+          <MaterialCommunityIcons name="lock-open-outline" size={20} color="#d97706" />
+          <Text style={styles.promoTitle}>Unlock More Features</Text>
+        </View>
+        <Text style={styles.promoText}>
+          Subscribe from UGX 11,000/week — verified badge, more images & promo banners.
+        </Text>
+        <TouchableOpacity style={styles.viewPlansBtn} onPress={handleOpenSubscriptionWeb}>
+          <Text style={styles.viewPlansText}>View Plans</Text>
+          <MaterialCommunityIcons name="arrow-right" size={16} color="#d97706" />
         </TouchableOpacity>
       </View>
 
+      {/* Verified Vendor Card */}
+      <View style={styles.verifiedCard}>
+        <View style={styles.verifiedLeft}>
+          <MaterialCommunityIcons name="medal-outline" size={26} color="#d97706" />
+          <View style={{ marginLeft: 10 }}>
+            <Text style={styles.verifiedTitle}>Verified Vendor</Text>
+            <Text style={styles.verifiedSub}>Your store is verified & trusted by DropStore</Text>
+          </View>
+        </View>
+        <View style={styles.verifiedBadge}>
+          <Text style={styles.verifiedBadgeText}>VERIFIED</Text>
+        </View>
+      </View>
+
       {/* Stats Overview */}
-      <Text style={styles.sectionTitle}>Overview</Text>
       {loading ? (
-        <ActivityIndicator size="large" color={COLORS.primary} style={{ marginVertical: 20 }} />
+        <ActivityIndicator size="large" color={COLORS.primary || '#eab308'} style={{ marginVertical: 20 }} />
       ) : (
         <View style={styles.statsGrid}>
           <View style={styles.statCard}>
-            <MaterialCommunityIcons name="package-variant" size={24} color={COLORS.primary} />
-            <Text style={styles.statNumber}>{stats.totalProducts || 0}</Text>
+            <MaterialCommunityIcons name="package-variant" size={22} color="#eab308" />
+            <Text style={styles.statNumber}>{stats.productsCount || 0}</Text>
             <Text style={styles.statLabel}>Products</Text>
+            <Text style={styles.statSub}>{stats.productsCount || 0} active</Text>
           </View>
+
           <View style={styles.statCard}>
-            <MaterialCommunityIcons name="clipboard-text-outline" size={24} color="#3b82f6" />
-            <Text style={styles.statNumber}>{stats.totalOrders || 0}</Text>
-            <Text style={styles.statLabel}>Orders</Text>
+            <MaterialCommunityIcons name="eye-outline" size={22} color="#eab308" />
+            <Text style={styles.statNumber}>{stats.clicksCount || 0}</Text>
+            <Text style={styles.statLabel}>Clicks</Text>
           </View>
+
           <View style={styles.statCard}>
-            <MaterialCommunityIcons name="tag-multiple-outline" size={24} color="#eab308" />
-            <Text style={styles.statNumber}>{stats.pendingOffers || 0}</Text>
-            <Text style={styles.statLabel}>Pending Offers</Text>
+            <MaterialCommunityIcons name="truck-outline" size={22} color="#eab308" />
+            <Text style={styles.statNumber}>{stats.deliveriesCount || 0}</Text>
+            <Text style={styles.statLabel}>Deliveries</Text>
           </View>
+
           <View style={styles.statCard}>
-            <MaterialCommunityIcons name="cash-multiple" size={24} color="#22c55e" />
-            <Text style={styles.statNumber}>${stats.totalSales || 0}</Text>
-            <Text style={styles.statLabel}>Total Sales</Text>
+            <MaterialCommunityIcons name="star-outline" size={22} color="#eab308" />
+            <Text style={styles.statNumber}>{stats.planType || 'Free'}</Text>
+            <Text style={styles.statLabel}>Plan</Text>
           </View>
         </View>
       )}
 
-      {/* Quick Actions & Management */}
-      <Text style={styles.sectionTitle}>Management & Actions</Text>
+      {/* Quick Actions */}
+      <Text style={styles.sectionTitle}>Quick Actions</Text>
       <View style={styles.actionsList}>
-        <TouchableOpacity
-          style={styles.actionItem}
-          onPress={() => navigation.navigate('VendorProducts')}
-        >
-          <View style={[styles.actionIconWrap, { backgroundColor: '#eff6ff' }]}>
-            <MaterialCommunityIcons name="cube-outline" size={22} color="#3b82f6" />
-          </View>
-          <View style={styles.actionContent}>
-            <Text style={styles.actionTitle}>Manage Products</Text>
-            <Text style={styles.actionSub}>Add, update or remove store items</Text>
-          </View>
-          <MaterialCommunityIcons name="chevron-right" size={22} color="#94a3b8" />
+        <TouchableOpacity style={styles.actionItem} onPress={() => navigation.navigate('VendorProducts')}>
+          <MaterialCommunityIcons name="package-variant" size={20} color="#eab308" style={styles.actionIcon} />
+          <Text style={styles.actionTitle}>My Products</Text>
+          <MaterialCommunityIcons name="chevron-right" size={20} color="#cbd5e1" />
         </TouchableOpacity>
 
-        <TouchableOpacity
-          style={styles.actionItem}
-          onPress={() => navigation.navigate('VendorOffers')}
-        >
-          <View style={[styles.actionIconWrap, { backgroundColor: '#fefce8' }]}>
-            <MaterialCommunityIcons name="tag-outline" size={22} color="#eab308" />
-          </View>
-          <View style={styles.actionContent}>
-            <Text style={styles.actionTitle}>Customer Price Offers</Text>
-            <Text style={styles.actionSub}>Review pending negotiation requests</Text>
-          </View>
-          <MaterialCommunityIcons name="chevron-right" size={22} color="#94a3b8" />
+        <TouchableOpacity style={styles.actionItem} onPress={() => navigation.navigate('VendorOffers')}>
+          <MaterialCommunityIcons name="message-processing-outline" size={20} color="#eab308" style={styles.actionIcon} />
+          <Text style={styles.actionTitle}>Price Offers</Text>
+          <MaterialCommunityIcons name="chevron-right" size={20} color="#cbd5e1" />
         </TouchableOpacity>
 
-        <TouchableOpacity
-          style={styles.actionItem}
-          onPress={() => navigation.navigate('VendorOrders')}
-        >
-          <View style={[styles.actionIconWrap, { backgroundColor: '#f0fdf4' }]}>
-            <MaterialCommunityIcons name="truck-delivery-outline" size={22} color="#22c55e" />
-          </View>
-          <View style={styles.actionContent}>
-            <Text style={styles.actionTitle}>Orders & Deliveries</Text>
-            <Text style={styles.actionSub}>Track & process customer orders</Text>
-          </View>
-          <MaterialCommunityIcons name="chevron-right" size={22} color="#94a3b8" />
+        <TouchableOpacity style={styles.actionItem} onPress={() => navigation.navigate('Notifications')}>
+          <MaterialCommunityIcons name="bell-outline" size={20} color="#eab308" style={styles.actionIcon} />
+          <Text style={styles.actionTitle}>Notifications</Text>
+          <MaterialCommunityIcons name="chevron-right" size={20} color="#cbd5e1" />
         </TouchableOpacity>
 
-        <TouchableOpacity
-          style={styles.actionItem}
-          onPress={handleOpenWebPayments}
-        >
-          <View style={[styles.actionIconWrap, { backgroundColor: '#fdf4ff' }]}>
-            <MaterialCommunityIcons name="open-in-new" size={22} color="#c084fc" />
-          </View>
-          <View style={styles.actionContent}>
-            <Text style={styles.actionTitle}>Payments & Web Portal</Text>
-            <Text style={styles.actionSub}>Manage store billing and payouts on dropstore.click</Text>
-          </View>
-          <MaterialCommunityIcons name="chevron-right" size={22} color="#94a3b8" />
+        <TouchableOpacity style={styles.actionItem} onPress={() => navigation.navigate('Messages')}>
+          <MaterialCommunityIcons name="message-outline" size={20} color="#eab308" style={styles.actionIcon} />
+          <Text style={styles.actionTitle}>Messages</Text>
+          <MaterialCommunityIcons name="chevron-right" size={20} color="#cbd5e1" />
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.actionItem} onPress={handleOpenSubscriptionWeb}>
+          <MaterialCommunityIcons name="credit-card-outline" size={20} color="#eab308" style={styles.actionIcon} />
+          <Text style={styles.actionTitle}>Subscription</Text>
+          <MaterialCommunityIcons name="chevron-right" size={20} color="#cbd5e1" />
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.actionItem} onPress={() => navigation.navigate('VendorOrders')}>
+          <MaterialCommunityIcons name="truck-outline" size={20} color="#eab308" style={styles.actionIcon} />
+          <Text style={styles.actionTitle}>Deliveries</Text>
+          <MaterialCommunityIcons name="chevron-right" size={20} color="#cbd5e1" />
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.actionItem} onPress={() => navigation.navigate('Profile')}>
+          <MaterialCommunityIcons name="account-outline" size={20} color="#eab308" style={styles.actionIcon} />
+          <Text style={styles.actionTitle}>Profile</Text>
+          <MaterialCommunityIcons name="chevron-right" size={20} color="#cbd5e1" />
+        </TouchableOpacity>
+
+        <TouchableOpacity style={[styles.actionItem, styles.premiumActionItem]} onPress={handleOpenSubscriptionWeb}>
+          <MaterialCommunityIcons name="diamond-outline" size={20} color="#b45309" style={styles.actionIcon} />
+          <Text style={styles.premiumActionTitle}>Go Premium</Text>
+          <MaterialCommunityIcons name="chevron-right" size={20} color="#b45309" />
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.actionItem} onPress={() => navigation.navigate('Feedback')}>
+          <MaterialCommunityIcons name="message-draw" size={20} color="#eab308" style={styles.actionIcon} />
+          <Text style={styles.actionTitle}>Give Feedback</Text>
+          <MaterialCommunityIcons name="chevron-right" size={20} color="#cbd5e1" />
         </TouchableOpacity>
       </View>
 
@@ -224,7 +272,7 @@ export default function VendorDashboardScreen({ navigation }) {
 
         <TouchableOpacity style={styles.deleteBtn} onPress={handleDeleteAccount}>
           <MaterialCommunityIcons name="delete-outline" size={18} color="#ef4444" />
-          <Text style={styles.deleteBtnText}>Request Account Deletion</Text>
+          <Text style={styles.deleteBtnText}>Delete Account</Text>
         </TouchableOpacity>
       </View>
     </ScrollView>
@@ -233,28 +281,50 @@ export default function VendorDashboardScreen({ navigation }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f8fafc' },
-  inner: { padding: 20, paddingBottom: 40 },
+  inner: { padding: 16, paddingBottom: 40 },
   header: {
     flexDirection: 'row',
     justify: 'space-between',
     alignItems: 'center',
-    marginBottom: 24,
-    marginTop: 10,
+    marginTop: 8,
   },
-  welcomeText: { fontSize: 14, color: '#64748b' },
-  vendorName: { fontSize: 22, fontWeight: '800', color: '#0f172a' },
-  profileBadge: { padding: 4 },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#334155',
+  headerTitleRow: { flexDirection: 'row', alignItems: 'center' },
+  helloText: { fontSize: 24, fontWeight: '800', color: '#0f172a' },
+  signOutHeaderBtn: { color: '#ef4444', fontWeight: '700', fontSize: 14 },
+  subHeader: { fontSize: 13, color: '#64748b', marginBottom: 16, marginTop: -2 },
+  promoBanner: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#f1f5f9',
     marginBottom: 12,
-    marginTop: 10,
   },
+  promoBannerHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 6 },
+  promoTitle: { fontSize: 15, fontWeight: '700', color: '#0f172a', marginLeft: 8 },
+  promoText: { fontSize: 13, color: '#64748b', lineHeight: 18, marginBottom: 10 },
+  viewPlansBtn: { flexDirection: 'row', alignItems: 'center' },
+  viewPlansText: { fontSize: 13, fontWeight: '700', color: '#d97706', marginRight: 4 },
+  verifiedCard: {
+    flexDirection: 'row',
+    justify: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#f0fdf4',
+    borderRadius: 16,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: '#dcfce7',
+    marginBottom: 16,
+  },
+  verifiedLeft: { flexDirection: 'row', alignItems: 'center', flex: 1 },
+  verifiedTitle: { fontSize: 14, fontWeight: '700', color: '#166534' },
+  verifiedSub: { fontSize: 11, color: '#15803d', marginTop: 1, flexWrap: 'wrap' },
+  verifiedBadge: { backgroundColor: '#16a34a', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 4 },
+  verifiedBadgeText: { color: '#fff', fontSize: 10, fontWeight: '800' },
   statsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 12,
+    gap: 10,
     marginBottom: 20,
   },
   statCard: {
@@ -263,11 +333,13 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 16,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: '#f1f5f9',
     alignItems: 'flex-start',
   },
-  statNumber: { fontSize: 20, fontWeight: '800', color: '#0f172a', marginTop: 8 },
-  statLabel: { fontSize: 12, color: '#64748b', marginTop: 2 },
+  statNumber: { fontSize: 22, fontWeight: '800', color: '#0f172a', marginTop: 8 },
+  statLabel: { fontSize: 13, fontWeight: '600', color: '#64748b', marginTop: 2 },
+  statSub: { fontSize: 11, color: '#94a3b8', marginTop: 2 },
+  sectionTitle: { fontSize: 16, fontWeight: '700', color: '#1e293b', marginBottom: 12, marginTop: 4 },
   actionsList: { gap: 10, marginBottom: 20 },
   actionItem: {
     flexDirection: 'row',
@@ -276,20 +348,13 @@ const styles = StyleSheet.create({
     padding: 14,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: '#f1f5f9',
   },
-  actionIconWrap: {
-    width: 40,
-    height: 40,
-    borderRadius: 10,
-    alignItems: 'center',
-    justify: 'center',
-    marginRight: 12,
-  },
-  actionContent: { flex: 1 },
-  actionTitle: { fontSize: 15, fontWeight: '700', color: '#0f172a' },
-  actionSub: { fontSize: 12, color: '#64748b', marginTop: 2 },
-  accountOptions: { gap: 12, marginTop: 4 },
+  actionIcon: { marginRight: 12 },
+  actionTitle: { flex: 1, fontSize: 14, fontWeight: '600', color: '#1e293b' },
+  premiumActionItem: { backgroundColor: '#fffbeb', borderColor: '#fef3c7' },
+  premiumActionTitle: { flex: 1, fontSize: 14, fontWeight: '700', color: '#b45309' },
+  accountOptions: { gap: 10 },
   logoutBtn: {
     flexDirection: 'row',
     alignItems: 'center',
