@@ -10,10 +10,10 @@ import {
 } from 'react-native';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import * as SecureStore from 'expo-secure-store';
-import client, { TOKEN_KEY } from '../../api/client';
-import { clearAllCache } from '../../api/cache';
-import { useAuth } from '../../context/AuthContext';
-import { COLORS } from '../../constants/theme';
+import client, { TOKEN_KEY } from '../api/client';
+import { clearAllCache } from '../api/cache';
+import { useAuth } from '../context/AuthContext';
+import { COLORS } from '../constants/theme';
 
 export default function ProfileScreen({ navigation }) {
   const { user, logout } = useAuth();
