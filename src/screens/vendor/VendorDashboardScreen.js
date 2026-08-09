@@ -11,11 +11,10 @@ import {
   RefreshControl,
 } from 'react-native';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
-import * as SecureStore from 'expo-secure-store';
-import client, { TOKEN_KEY } from '../../api/client';
-import { clearAllCache } from '../../api/cache';
+import client from '../../api/client';
 import { useAuth } from '../../context/AuthContext';
 import { COLORS } from '../../constants/theme';
+import { deleteAccount } from '../../api/accountDeletion';
 
 export default function VendorDashboardScreen({ navigation }) {
   const { user, logout } = useAuth();
@@ -54,7 +53,6 @@ export default function VendorDashboardScreen({ navigation }) {
   };
 
   const handleLogout = async () => {
-    await clearAllCache();
     await logout();
   };
 
@@ -73,7 +71,6 @@ export default function VendorDashboardScreen({ navigation }) {
     }
   };
 
-  // Immediate In-App Account Deletion (Apple Guideline 5.1.1(v) Compliant)
   const handleDeleteAccount = () => {
     Alert.alert(
       'Delete Account',
@@ -86,36 +83,15 @@ export default function VendorDashboardScreen({ navigation }) {
           onPress: async () => {
             try {
               setLoading(true);
+              await deleteAccount({ role: 'vendor', logout });
 
-              // 1. Call backend deletion endpoint
-              const res = await client.delete('/vendor/account');
-
-              if (res.status === 200 || res.status === 204) {
-                // 2. Clear token & local cache
-                await SecureStore.deleteItemAsync(TOKEN_KEY);
-                await clearAllCache();
-
-                Alert.alert(
-                  'Account Deleted',
-                  'Your vendor account has been permanently deleted.',
-                  [
-                    {
-                      text: 'OK',
-                      onPress: async () => {
-                        await logout();
-                      },
-                    },
-                  ]
-                );
-              } else {
-                Alert.alert('Error', res.data?.message || 'Failed to delete account.');
-              }
+              Alert.alert('Account Deleted', 'Your vendor account has been permanently deleted.', [
+                {
+                  text: 'OK',
+                },
+              ]);
             } catch (error) {
-              Alert.alert(
-                'Error',
-                error.response?.data?.message ||
-                  'Unable to complete account deletion at this time. Please try again.'
-              );
+              Alert.alert('Error', error.message || 'Unable to complete account deletion at this time. Please try again.');
             } finally {
               setLoading(false);
             }
@@ -219,13 +195,13 @@ export default function VendorDashboardScreen({ navigation }) {
           <MaterialCommunityIcons name="chevron-right" size={20} color="#cbd5e1" />
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.actionItem} onPress={() => navigation.navigate('Notifications')}>
+        <TouchableOpacity style={styles.actionItem} onPress={() => navigation.navigate('VendorNotifications')}>
           <MaterialCommunityIcons name="bell-outline" size={20} color="#eab308" style={styles.actionIcon} />
           <Text style={styles.actionTitle}>Notifications</Text>
           <MaterialCommunityIcons name="chevron-right" size={20} color="#cbd5e1" />
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.actionItem} onPress={() => navigation.navigate('Messages')}>
+        <TouchableOpacity style={styles.actionItem} onPress={() => navigation.navigate('ChatList')}>
           <MaterialCommunityIcons name="message-outline" size={20} color="#eab308" style={styles.actionIcon} />
           <Text style={styles.actionTitle}>Messages</Text>
           <MaterialCommunityIcons name="chevron-right" size={20} color="#cbd5e1" />
@@ -237,7 +213,7 @@ export default function VendorDashboardScreen({ navigation }) {
           <MaterialCommunityIcons name="chevron-right" size={20} color="#cbd5e1" />
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.actionItem} onPress={() => navigation.navigate('VendorOrders')}>
+        <TouchableOpacity style={styles.actionItem} onPress={() => navigation.navigate('Deliveries')}>
           <MaterialCommunityIcons name="truck-outline" size={20} color="#eab308" style={styles.actionIcon} />
           <Text style={styles.actionTitle}>Deliveries</Text>
           <MaterialCommunityIcons name="chevron-right" size={20} color="#cbd5e1" />

@@ -9,22 +9,18 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
-import * as SecureStore from 'expo-secure-store';
-import client, { TOKEN_KEY } from '../api/client';
-import { clearAllCache } from '../api/cache';
 import { useAuth } from '../context/AuthContext';
 import { COLORS } from '../constants/theme';
+import { deleteAccount } from '../api/accountDeletion';
 
 export default function ProfileScreen({ navigation }) {
   const { user, logout } = useAuth();
   const [loading, setLoading] = useState(false);
 
   const handleLogout = async () => {
-    await clearAllCache();
     await logout();
   };
 
-  // Immediate In-App Buyer Account Deletion (Apple Guideline 5.1.1(v) Compliant)
   const handleDeleteBuyerAccount = () => {
     Alert.alert(
       'Delete Account',
@@ -37,36 +33,15 @@ export default function ProfileScreen({ navigation }) {
           onPress: async () => {
             try {
               setLoading(true);
+              await deleteAccount({ role: 'buyer', logout });
 
-              // 1. Call backend endpoint for buyer account deletion
-              const res = await client.delete('/user/account');
-
-              if (res.status === 200 || res.status === 204) {
-                // 2. Clear secure auth token and local app cache
-                await SecureStore.deleteItemAsync(TOKEN_KEY);
-                await clearAllCache();
-
-                Alert.alert(
-                  'Account Deleted',
-                  'Your account has been permanently deleted.',
-                  [
-                    {
-                      text: 'OK',
-                      onPress: async () => {
-                        await logout();
-                      },
-                    },
-                  ]
-                );
-              } else {
-                Alert.alert('Error', res.data?.message || 'Failed to delete account.');
-              }
+              Alert.alert('Account Deleted', 'Your account has been permanently deleted.', [
+                {
+                  text: 'OK',
+                },
+              ]);
             } catch (error) {
-              Alert.alert(
-                'Error',
-                error.response?.data?.message ||
-                  'Unable to complete account deletion at this time. Please try again later.'
-              );
+              Alert.alert('Error', error.message || 'Unable to complete account deletion at this time. Please try again later.');
             } finally {
               setLoading(false);
             }
