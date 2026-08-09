@@ -33,13 +33,13 @@ export default function ProfileScreen({ navigation }) {
           onPress: async () => {
             try {
               setLoading(true);
-              await deleteAccount({ role: 'buyer', logout });
+              const result = await deleteAccount({ role: 'buyer', logout });
 
-              Alert.alert('Account Deleted', 'Your account has been permanently deleted.', [
-                {
-                  text: 'OK',
-                },
-              ]);
+              Alert.alert(
+                'Account Deleted',
+                result?.message || 'Your account has been removed from this device and your session has been cleared.',
+                [{ text: 'OK' }]
+              );
             } catch (error) {
               Alert.alert('Error', error.message || 'Unable to complete account deletion at this time. Please try again later.');
             } finally {

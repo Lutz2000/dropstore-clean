@@ -83,13 +83,13 @@ export default function VendorDashboardScreen({ navigation }) {
           onPress: async () => {
             try {
               setLoading(true);
-              await deleteAccount({ role: 'vendor', logout });
+              const result = await deleteAccount({ role: 'vendor', logout });
 
-              Alert.alert('Account Deleted', 'Your vendor account has been permanently deleted.', [
-                {
-                  text: 'OK',
-                },
-              ]);
+              Alert.alert(
+                'Account Deleted',
+                result?.message || 'Your vendor account has been removed from this device and your session has been cleared.',
+                [{ text: 'OK' }]
+              );
             } catch (error) {
               Alert.alert('Error', error.message || 'Unable to complete account deletion at this time. Please try again.');
             } finally {

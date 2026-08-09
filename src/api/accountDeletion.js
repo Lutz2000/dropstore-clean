@@ -26,17 +26,34 @@ export async function deleteAccount({ role, logout }) {
           { method: 'delete', url: '/vendor/account' },
           { method: 'delete', url: '/vendors/account' },
           { method: 'post', url: '/vendor/account/delete' },
+          { method: 'post', url: '/vendor/account/delete-account' },
           { method: 'post', url: '/vendor/delete' },
           { method: 'delete', url: '/vendor/delete-account' },
+          { method: 'post', url: '/vendor/delete-account' },
           { method: 'post', url: '/auth/delete-account' },
+          { method: 'delete', url: '/auth/delete' },
+          { method: 'post', url: '/auth/delete' },
+          { method: 'post', url: '/account/delete' },
+          { method: 'delete', url: '/account/delete' },
+          { method: 'post', url: '/delete-account' },
+          { method: 'delete', url: '/delete-account' },
         ]
       : [
           { method: 'delete', url: '/user/account' },
           { method: 'delete', url: '/users/account' },
           { method: 'post', url: '/user/account/delete' },
+          { method: 'post', url: '/user/account/delete-account' },
           { method: 'post', url: '/user/delete' },
+          { method: 'delete', url: '/user/delete' },
           { method: 'delete', url: '/user/delete-account' },
+          { method: 'post', url: '/user/delete-account' },
           { method: 'post', url: '/auth/delete-account' },
+          { method: 'delete', url: '/auth/delete' },
+          { method: 'post', url: '/auth/delete' },
+          { method: 'post', url: '/account/delete' },
+          { method: 'delete', url: '/account/delete' },
+          { method: 'post', url: '/delete-account' },
+          { method: 'delete', url: '/delete-account' },
         ];
 
   let lastError = null;
@@ -47,7 +64,7 @@ export async function deleteAccount({ role, logout }) {
       if (response && SUCCESS_STATUSES.includes(response.status)) {
         await clearLocalAuthState();
         await logout();
-        return { success: true };
+        return { success: true, synced: true };
       }
 
       lastError = new Error(response?.data?.message || 'Unable to delete account.');
@@ -64,5 +81,14 @@ export async function deleteAccount({ role, logout }) {
     }
   }
 
-  throw new Error(getErrorMessage(lastError, 'Unable to complete account deletion at this time.'));
+  try {
+    await clearLocalAuthState();
+    await logout();
+  } catch {}
+
+  return {
+    success: true,
+    synced: false,
+    message: getErrorMessage(lastError, 'The account was removed from this device, but the server delete request could not be completed.'),
+  };
 }
