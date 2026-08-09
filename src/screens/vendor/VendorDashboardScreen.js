@@ -4,6 +4,7 @@ import {
   Text,
   StyleSheet,
   ScrollView,
+  SafeAreaView,
   TouchableOpacity,
   Alert,
   ActivityIndicator,
@@ -20,6 +21,11 @@ export default function VendorDashboardScreen({ navigation }) {
   const { user, logout } = useAuth();
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+
+  const finishAccountSession = async () => {
+    await logout();
+    navigation.reset({ index: 0, routes: [{ name: 'Landing' }] });
+  };
   const [stats, setStats] = useState({
     productsCount: 0,
     clicksCount: 0,
@@ -53,7 +59,7 @@ export default function VendorDashboardScreen({ navigation }) {
   };
 
   const handleLogout = async () => {
-    await logout();
+    await finishAccountSession();
   };
 
   // Redirect to web portal for store billing & plans (Apple IAP compliant)
@@ -83,13 +89,9 @@ export default function VendorDashboardScreen({ navigation }) {
           onPress: async () => {
             try {
               setLoading(true);
-              const result = await deleteAccount({ role: 'vendor', logout });
+              await deleteAccount({ role: 'vendor', logout: finishAccountSession, user });
 
-              Alert.alert(
-                'Account Deleted',
-                result?.message || 'Your vendor account has been removed from this device and your session has been cleared.',
-                [{ text: 'OK' }]
-              );
+              Alert.alert('Account Deleted', 'Your vendor account has been deleted successfully.', [{ text: 'OK' }]);
             } catch (error) {
               Alert.alert('Error', error.message || 'Unable to complete account deletion at this time. Please try again.');
             } finally {
@@ -102,11 +104,12 @@ export default function VendorDashboardScreen({ navigation }) {
   };
 
   return (
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={styles.inner}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-    >
+    <SafeAreaView style={styles.safeArea}>
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={styles.inner}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+      >
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerTitleRow}>
@@ -240,22 +243,24 @@ export default function VendorDashboardScreen({ navigation }) {
 
       {/* Account Options */}
       <Text style={styles.sectionTitle}>Account Options</Text>
-      <View style={styles.accountOptions}>
-        <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
-          <MaterialCommunityIcons name="logout" size={18} color="#ef4444" />
-          <Text style={styles.logoutText}>Sign Out</Text>
-        </TouchableOpacity>
+        <View style={styles.accountOptions}>
+          <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
+            <MaterialCommunityIcons name="logout" size={18} color="#ef4444" />
+            <Text style={styles.logoutText}>Sign Out</Text>
+          </TouchableOpacity>
 
-        <TouchableOpacity style={styles.deleteBtn} onPress={handleDeleteAccount}>
-          <MaterialCommunityIcons name="delete-outline" size={18} color="#ef4444" />
-          <Text style={styles.deleteBtnText}>Delete Account</Text>
-        </TouchableOpacity>
-      </View>
-    </ScrollView>
+          <TouchableOpacity style={styles.deleteBtn} onPress={handleDeleteAccount}>
+            <MaterialCommunityIcons name="delete-outline" size={18} color="#ef4444" />
+            <Text style={styles.deleteBtnText}>Delete Account</Text>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  safeArea: { flex: 1, backgroundColor: '#f8fafc' },
   container: { flex: 1, backgroundColor: '#f8fafc' },
   inner: { padding: 16, paddingBottom: 40 },
   header: {

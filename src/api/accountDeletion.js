@@ -19,7 +19,8 @@ async function clearLocalAuthState() {
   ]);
 }
 
-export async function deleteAccount({ role, logout }) {
+export async function deleteAccount({ role, logout, user }) {
+  const userId = user?.id;
   const endpoints =
     role === 'vendor'
       ? [
@@ -37,6 +38,12 @@ export async function deleteAccount({ role, logout }) {
           { method: 'delete', url: '/account/delete' },
           { method: 'post', url: '/delete-account' },
           { method: 'delete', url: '/delete-account' },
+          ...(userId ? [
+            { method: 'delete', url: `/vendor/${userId}` },
+            { method: 'delete', url: `/vendors/${userId}` },
+            { method: 'delete', url: `/vendor/delete/${userId}` },
+            { method: 'post', url: `/vendor/${userId}/delete` },
+          ] : []),
         ]
       : [
           { method: 'delete', url: '/user/account' },
@@ -54,6 +61,14 @@ export async function deleteAccount({ role, logout }) {
           { method: 'delete', url: '/account/delete' },
           { method: 'post', url: '/delete-account' },
           { method: 'delete', url: '/delete-account' },
+          ...(userId ? [
+            { method: 'delete', url: `/users/${userId}` },
+            { method: 'delete', url: `/user/${userId}` },
+            { method: 'delete', url: `/users/${userId}/delete` },
+            { method: 'delete', url: `/user/${userId}/delete` },
+            { method: 'post', url: `/users/${userId}/delete` },
+            { method: 'post', url: `/user/${userId}/delete` },
+          ] : []),
         ];
 
   let lastError = null;
@@ -81,14 +96,7 @@ export async function deleteAccount({ role, logout }) {
     }
   }
 
-  try {
-    await clearLocalAuthState();
-    await logout();
-  } catch {}
-
-  return {
-    success: true,
-    synced: false,
-    message: getErrorMessage(lastError, 'The account was removed from this device, but the server delete request could not be completed.'),
-  };
+  throw new Error(
+    getErrorMessage(lastError, 'We could not complete account deletion from the server. Please try again or contact support.')
+  );
 }

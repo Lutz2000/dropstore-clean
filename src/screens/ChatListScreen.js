@@ -3,6 +3,7 @@ import {
   View, Text, FlatList, TouchableOpacity, StyleSheet,
   ActivityIndicator, RefreshControl, Image, TextInput,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import client, { BASE_URL } from '../api/client';
 import { useAuth } from '../context/AuthContext';
@@ -212,7 +213,7 @@ export default function ChatListScreen({ navigation }) {
   });
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
 
       {/* Tab bar */}
       <View style={styles.tabs}>
@@ -308,7 +309,7 @@ export default function ChatListScreen({ navigation }) {
               }
             />
       )}
-    </View>
+    </SafeAreaView>
   );
 }
 
